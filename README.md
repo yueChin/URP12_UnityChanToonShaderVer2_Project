@@ -24,8 +24,9 @@
 <!-- ABOUT THE PROJECT -->
 ## 简单概述
 
-* 本库主要解决了UnityChanToonShaderVer2_Project->Lagacy2.1 Branch 在URP12下的正确渲染
+* 本库主要解决了UnityChanToonShaderVer2_Project->Lagacy2.0 Branch 在URP12下的正确渲染
 * 只是卡通渲染和URP的学习示例；Just Study for ToonShader And URP
+* 本项目一切资源归属unity3d-jp所有
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -33,6 +34,6 @@
 <!-- ACKNOWLEDGMENTS -->
 ## 参考
 * [UniversalRP](https://github.com/devagame/UniversalRP )
-* [https://github.com/killop/URP-12-GammaUIAndSplitResolution](https://github.com/unity3d-jp/UnityChanToonShaderVer2_Project)
+* [https://github.com/unity3d-jp/UnityChanToonShaderVer2_Project](https://github.com/unity3d-jp/UnityChanToonShaderVer2_Project)
 
 <p align="right">(<a href="#top">back to top</a>)</p>
