@@ -24,7 +24,8 @@
 <!-- ABOUT THE PROJECT -->
 ## 简单概述
 
-* 本库主要解决了在  UnityChanToonShaderVer2_Project 在URP12下的正确渲染
+* 本库主要解决了UnityChanToonShaderVer2_Project 在URP12下的正确渲染
+* 只是卡通渲染和URP的学习示例；Just Study for ToonShader And URP
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
