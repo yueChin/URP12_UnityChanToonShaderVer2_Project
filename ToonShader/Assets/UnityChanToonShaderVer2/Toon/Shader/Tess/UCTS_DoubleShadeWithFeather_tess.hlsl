@@ -13,13 +13,19 @@
 #ifndef UCTS_DOUBLESHADWITHDEATHER_TESS_URP
 #define UCTS_DOUBLESHADWITHDEATHER_TESS_URP
 
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/UnityInstancing.hlsl"
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Macros.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/GlobalIllumination.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/UnityInput.hlsl"
+#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Input.hlsl"
+#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/RealtimeLights.hlsl"
+#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/ShaderVariablesFunctions.hlsl"
+#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
+#include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
 #include "Assets/UnityChanToonShaderVer2/Toon/Shader/URPInput.hlsl"
-#include "Assets/UnityChanToonShaderVer2/Toon/Shader/Tess/UCTS_Tess.hlsl"
 
 uniform sampler2D _MainTex; uniform float4 _MainTex_ST;
-uniform float4 _BaseColor;
 //v.2.0.5
 uniform float4 _Color;
 uniform half _Use_BaseAs1st;
@@ -90,7 +96,6 @@ uniform half _Is_Ortho;
 uniform float _CameraRolling_Stabilizer;
 uniform half _BlurLevelMatcap;
 uniform half _Inverse_MatcapMask;
-uniform float _BumpScale;
 uniform float _BumpScaleMatcap;
 //Emissive
 uniform sampler2D _Emissive_Tex; uniform float4 _Emissive_Tex_ST;
@@ -213,7 +218,7 @@ VertexOutput vert (VertexInput v) {
 //Tessellation ON
 #ifdef TESSELLATION_ON
 #ifdef UNITY_CAN_COMPILE_TESSELLATION
-tessellation domain shader
+//tessellation domain shader
 [UNITY_domain("tri")]
 VertexOutput ds_surf(UnityTessellationFactors tessFactors, const OutputPatch<InternalTessInterp_VertexInput, 3> vi, float3 bary : SV_DomainLocation)
 {
@@ -278,11 +283,11 @@ float4 frag(VertexOutput i, half facing : VFACE) : SV_TARGET {
     //v.2.0.5: 
     float3 lightColor = lerp(max(defaultLightColor,_MainLightColor.rgb),max(defaultLightColor,saturate(_MainLightColor.rgb)),_Is_Filter_LightColor);
 #elif _IS_PASS_FWDDELTA
-    float3 lightDirection = normalize(lerp(_WorldSpaceLightPos0.xyz, _WorldSpaceLightPos0.xyz - i.posWorld.xyz,_WorldSpaceLightPos0.w));
+    float3 lightDirection = normalize(lerp(_MainLightPosition.xyz, _MainLightPosition.xyz - i.posWorld.xyz,_MainLightPosition.w));
     //v.2.0.5: 
     float3 addPassLightColor = (0.5*dot(lerp( i.normalDir, normalDirection, _Is_NormalMapToBase ), lightDirection)+0.5) * _MainLightColor.rgb * attenuatedLightColor;
     float pureIntencity = max(0.001,(0.299*_MainLightColor.r + 0.587*_MainLightColor.g + 0.114*_MainLightColor.b));
-    float3 lightColor = max(0, lerp(addPassLightColor, lerp(0,min(addPassLightColor,addPassLightColor/pureIntencity),_WorldSpaceLightPos0.w),_Is_Filter_LightColor));
+    float3 lightColor = max(0, lerp(addPassLightColor, lerp(0,min(addPassLightColor,addPassLightColor/pureIntencity),_MainLightPosition.w),_Is_Filter_LightColor));
 #endif
 ////// Lighting:
     float3 halfDirection = normalize(viewDirection+lightDirection);
@@ -434,9 +439,9 @@ float4 frag(VertexOutput i, half facing : VFACE) : SV_TARGET {
     _ShadeColor_Step = saturate(_ShadeColor_Step + _StepOffset);
     //
     //v.2.0.5: If Added lights is directional, set 0 as _LightIntensity
-    float _LightIntensity = lerp(0,(0.299*_LightColor0.r + 0.587*_LightColor0.g + 0.114*_LightColor0.b)*attenuation,_WorldSpaceLightPos0.w) ;
+    float _LightIntensity = lerp(0,(0.299*_MainLightColor.r + 0.587*_MainLightColor.g + 0.114*_MainLightColor.b)*_MainLightShadowParams.x,_MainLightPosition.w) ;
     //v.2.0.5: Filtering the high intensity zone of PointLights
-    float3 Set_LightColor = lerp(lightColor,lerp(lightColor,min(lightColor,_LightColor0.rgb*attenuation*_BaseColor_Step),_WorldSpaceLightPos0.w),_Is_Filter_HiCutPointLightColor);
+    float3 Set_LightColor = lerp(lightColor,lerp(lightColor,min(lightColor,_MainLightColor.rgb*_MainLightShadowParams.x*_BaseColor_Step),_MainLightPosition.w),_Is_Filter_HiCutPointLightColor);
     //
     float3 Set_BaseColor = lerp( (_BaseColor.rgb*_MainTex_var.rgb*_LightIntensity), ((_BaseColor.rgb*_MainTex_var.rgb)*Set_LightColor), _Is_LightColor_Base );
     //v.2.0.5

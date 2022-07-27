@@ -183,14 +183,14 @@ Shader "UnityChanToonShader/Toon_ShadingGradeMap" {
         Pass {
             Name "FORWARD"
             Tags {
-                "LightMode" = "UniversalForward"
+                "LightMode" = "UniversalForward2"
             }
             Cull[_CullMode]
             
             
             HLSLPROGRAM
-            #pragma vertex vert
-            #pragma fragment frag
+            #pragma vertex LitPassVertex
+            #pragma fragment LitPassFragment
             //#define UNITY_PASS_FORWARDBASE
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
@@ -204,7 +204,13 @@ Shader "UnityChanToonShader/Toon_ShadingGradeMap" {
             //v.2.0.4
             #pragma multi_compile _IS_TRANSCLIPPING_OFF
             #pragma multi_compile _IS_ANGELRING_OFF
-            #pragma multi_compile _IS_PASS_FWDBASE
+            //#pragma multi_compile _IS_PASS_FWDBASE
+
+            #pragma multi_compile _ADDITIONAL_LIGHTS
+            #pragma multi_compile _MAIN_LIGHT_SHADOWS
+            #pragma multi_compile _MAIN_LIGHT_SHADOWS_CASCADE
+            #pragma multi_compile _ADDITIONAL_LIGHT_SHADOWS
+            #pragma multi_compile _SHADOWS_SOFT
             //v.2.0.7
             #pragma multi_compile _EMISSIVE_SIMPLE _EMISSIVE_ANIMATION
             //
@@ -212,63 +218,63 @@ Shader "UnityChanToonShader/Toon_ShadingGradeMap" {
 
             ENDHLSL
         }
-        Pass {
-            Name "FORWARD_DELTA"
-            Tags {
-                //"LightMode"="ForwardAdd"
-            }
-            Blend One One
-            Cull[_CullMode]
-            
-            
-            HLSLPROGRAM
-            #pragma vertex vert
-            #pragma fragment frag
-            //#define UNITY_PASS_FORWARDADD
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
-            // #include "Lighting.cginc"
-            //for Unity2018.x
-            #pragma multi_compile_fwdadd_fullshadows
-            #pragma multi_compile_fog
-            #pragma only_renderers d3d9 d3d11 glcore gles gles3 metal vulkan xboxone ps4 switch
-            #pragma target 3.0
-
-            //v.2.0.4
-            #pragma multi_compile _IS_TRANSCLIPPING_OFF
-            #pragma multi_compile _IS_ANGELRING_OFF
-            #pragma multi_compile _IS_PASS_FWDDELTA
-
-            #pragma multi_compile _ADDITIONAL_LIGHTS
-            #include "UCTS_ShadingGradeMap.hlsl"
-
-            ENDHLSL
-        }
-        Pass {
-            Name "ShadowCaster"
-            Tags {
-                "LightMode"="ShadowCaster"
-            }
-            Offset 1, 1
-            Cull Off
-            
-            HLSLPROGRAM
-            #pragma vertex vert
-            #pragma fragment frag
-            //#define UNITY_PASS_SHADOWCASTER
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            // #include "Lighting.cginc"
-            #pragma fragmentoption ARB_precision_hint_fastest
-            #pragma multi_compile_shadowcaster
-            #pragma multi_compile_fog
-            #pragma only_renderers d3d9 d3d11 glcore gles gles3 metal vulkan xboxone ps4 switch
-            #pragma target 3.0
-            //v.2.0.4
-            #pragma multi_compile _IS_CLIPPING_OFF
-            #include "UCTS_ShadowCaster.hlsl"
-            ENDHLSL
-        }
+//        Pass {
+//            Name "FORWARD_DELTA"
+//            Tags {
+//                //"LightMode"="ForwardAdd"
+//            }
+//            Blend One One
+//            Cull[_CullMode]
+//            
+//            
+//            HLSLPROGRAM
+//            #pragma vertex vert
+//            #pragma fragment frag
+//            //#define UNITY_PASS_FORWARDADD
+//            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+//            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+//            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
+//            // #include "Lighting.cginc"
+//            //for Unity2018.x
+//            #pragma multi_compile_fwdadd_fullshadows
+//            #pragma multi_compile_fog
+//            #pragma only_renderers d3d9 d3d11 glcore gles gles3 metal vulkan xboxone ps4 switch
+//            #pragma target 3.0
+//
+//            //v.2.0.4
+//            #pragma multi_compile _IS_TRANSCLIPPING_OFF
+//            #pragma multi_compile _IS_ANGELRING_OFF
+//            #pragma multi_compile _IS_PASS_FWDDELTA
+//
+//            #pragma multi_compile _ADDITIONAL_LIGHTS
+//            #include "UCTS_ShadingGradeMap.hlsl"
+//
+//            ENDHLSL
+//        }
+//        Pass {
+//            Name "ShadowCaster"
+//            Tags {
+//                "LightMode"="ShadowCaster"
+//            }
+//            Offset 1, 1
+//            Cull Off
+//            
+//            HLSLPROGRAM
+//            #pragma vertex vert
+//            #pragma fragment frag
+//            //#define UNITY_PASS_SHADOWCASTER
+//            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+//            // #include "Lighting.cginc"
+//            #pragma fragmentoption ARB_precision_hint_fastest
+//            #pragma multi_compile_shadowcaster
+//            #pragma multi_compile_fog
+//            #pragma only_renderers d3d9 d3d11 glcore gles gles3 metal vulkan xboxone ps4 switch
+//            #pragma target 3.0
+//            //v.2.0.4
+//            #pragma multi_compile _IS_CLIPPING_OFF
+//            #include "UCTS_ShadowCaster.hlsl"
+//            ENDHLSL
+//        }
 //ToonCoreEnd
     }
     FallBack "Legacy Shaders/VertexLit"

@@ -15,9 +15,17 @@
 #ifndef UCTS_OUTLINE_TESS_URP
 #define UCTS_OUTLINE_TESS_URP
 
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/UnityInstancing.hlsl"
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Macros.hlsl"
+#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/BRDF.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/GlobalIllumination.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/UnityInput.hlsl"
-#include "Assets/UnityChanToonShaderVer2/Toon/Shader/URPInput.hlsl"
+#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Input.hlsl"
+#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/RealtimeLights.hlsl"
+#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/ShaderVariablesFunctions.hlsl"
+#include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
+#include "Assets/UnityChanToonShaderVer2/Toon/Shader/Tess/URPTessellationInput.hlsl"
 
 #ifdef TESSELLATION_ON
 	#include "UCTS_Tess.hlsl"
@@ -25,7 +33,6 @@
 #ifndef TESSELLATION_ON
 	uniform float4 _LightColor0;
 #endif
-    uniform float4 _BaseColor;
     //v.2.0.7.5
     uniform float _Unlit_Intensity;
     uniform half _Is_Filter_LightColor;
@@ -119,7 +126,7 @@
     }
 #ifdef TESSELLATION_ON
 #ifdef UNITY_CAN_COMPILE_TESSELLATION
-	tessellation domain shader
+	//tessellation domain shader
 	[UNITY_domain("tri")]
 	VertexOutput ds_surf(UnityTessellationFactors tessFactors, const OutputPatch<InternalTessInterp_VertexInput, 3> vi, float3 bary : SV_DomainLocation)
 	{

@@ -410,11 +410,11 @@ float4 GetMainLightColor(ToonSurfaceData tsd,float3x3 tangentTransform)
 
 float4 GetAdditionLightColor(ToonSurfaceData tsd,Light light)
 {
-    float3 lightDirection = normalize(lerp(light.lightPositionWS.xyz,light.lightPositionWS - tsd.input.positionWS.xyz,_MainLightPosition.w));
+    float3 lightDirection = normalize(lerp(light.lightPositionWS.xyz,light.lightPositionWS - tsd.input.positionWS.xyz,light.lightPositionWS.w));
     //v.2.0.5: 
     float3 addPassLightColor = (0.5*dot(lerp( tsd.input.normalWS, tsd.normalDirection, _Is_NormalMapToBase ), lightDirection)+0.5) * light.color.rgb * light.shadowAttenuation;
     float pureIntencity = max(0.001,(0.299*light.color.r + 0.587*light.color.g + 0.114*light.color.b));
-    float3 lightColor = max(0, lerp(addPassLightColor, lerp(0,min(addPassLightColor,addPassLightColor/pureIntencity),_MainLightPosition.w),_Is_Filter_LightColor));
+    float3 lightColor = max(0, lerp(addPassLightColor, lerp(0,min(addPassLightColor,addPassLightColor/pureIntencity),light.lightPositionWS.w),_Is_Filter_LightColor));
 
     float3 halfDirection = normalize(tsd.input.viewDirWS+lightDirection);
     
@@ -423,9 +423,9 @@ float4 GetAdditionLightColor(ToonSurfaceData tsd,Light light)
     _ShadeColor_Step = saturate(_ShadeColor_Step + _StepOffset);
     //
     //v.2.0.5: If Added lights is directional, set 0 as _LightIntensity
-    float _LightIntensity = lerp(0,(0.299*light.color.r + 0.587*light.color.g + 0.114*light.color.b)*light.shadowAttenuation,_MainLightPosition.w) ;
+    float _LightIntensity = lerp(0,(0.299*light.color.r + 0.587*light.color.g + 0.114*light.color.b)*light.shadowAttenuation,light.lightPositionWS.w) ;
     //v.2.0.5: Filtering the high intensity zone of PointLights
-    float3 Set_LightColor = lerp(lightColor,lerp(lightColor,min(lightColor,light.color.rgb*light.shadowAttenuation*_BaseColor_Step),_MainLightPosition.w),_Is_Filter_HiCutPointLightColor);
+    float3 Set_LightColor = lerp(lightColor,lerp(lightColor,min(lightColor,light.color.rgb*light.shadowAttenuation*_BaseColor_Step),light.lightPositionWS.w),_Is_Filter_HiCutPointLightColor);
     //
     float3 Set_BaseColor = lerp( (_BaseColor.rgb*tsd._MainTex_var.rgb*_LightIntensity), ((_BaseColor.rgb*tsd._MainTex_var.rgb)*Set_LightColor), _Is_LightColor_Base );
     //v.2.0.5
