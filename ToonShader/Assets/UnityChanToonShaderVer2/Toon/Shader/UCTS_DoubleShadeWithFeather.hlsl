@@ -526,7 +526,7 @@ half4 LitPassFragment(Varyings input) : SV_Target
 
     InputData inputData;
     InitializeInputData(input, surfaceData.normalTS, inputData);
-    float4 attenuation = UniversalFragmentBlinnPhong(inputData, surfaceData);
+    //float4 attenuation = UniversalFragmentBlinnPhong(inputData, surfaceData);
 
 //-----------------------
 

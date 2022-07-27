@@ -206,7 +206,7 @@ Shader "UnityChanToonShader/Tessellation/AngelRing/Toon_ShadingGradeMap" {
         Pass {
             Name "FORWARD"
             Tags {
-                "LightMode" = "UniversalForward"
+                "LightMode" = "UniversalForward2"
             }
             Cull[_CullMode]
             
@@ -249,90 +249,90 @@ Shader "UnityChanToonShader/Tessellation/AngelRing/Toon_ShadingGradeMap" {
 
             ENDHLSL
         }
-        Pass {
-            Name "FORWARD_DELTA"
-            Tags {
-                //"LightMode"="ForwardAdd"
-            }
-            Blend One One
-            Cull[_CullMode]
-            
-            
-            HLSLPROGRAM
-            //Tessellation
-            #define TESSELLATION_ON
-            #pragma target 5.0
-            #pragma vertex tess_VertexInput
-            #pragma hull hs_VertexInput
-            #pragma domain ds_surf
-            //#pragma vertex vert
-
-            #pragma fragment frag
-            //#define UNITY_PASS_FORWARDADD
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
-            // #include "Lighting.cginc"
-            //Tessellation
-            #ifdef TESSELLATION_ON
-            #include "UCTS_Tess.hlsl"
-            #endif
-
-            //for Unity2018.x
-            #pragma multi_compile_fwdadd_fullshadows
-            #pragma multi_compile_fog
-            #pragma only_renderers d3d11 xboxone ps4 switch
-            //Tessellation
-            //#pragma target 3.0
-
-            //v.2.0.4
-            #pragma multi_compile _IS_TRANSCLIPPING_OFF
-            #pragma multi_compile _IS_ANGELRING_ON
-            #pragma multi_compile _IS_PASS_FWDDELTA
-            #pragma multi_compile _ADDITIONAL_LIGHTS
-            //Tessellation            
-            #include "UCTS_ShadingGradeMap_Tess.hlsl"
-
-            ENDHLSL
-        }
-        Pass {
-            Name "ShadowCaster"
-            Tags {
-                "LightMode"="ShadowCaster"
-            }
-            Offset 1, 1
-            Cull Off
-            
-            HLSLPROGRAM
-            //Tessellation
-            #define TESSELLATION_ON
-            #pragma target 5.0
-            #pragma vertex tess_VertexInput
-            #pragma hull hs_VertexInput
-            #pragma domain ds_surf
-            //#pragma vertex vert
-
-            #pragma fragment frag
-            //#define UNITY_PASS_SHADOWCASTER
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            // #include "Lighting.cginc"
-            //Tessellation
-            #ifdef TESSELLATION_ON
-            #include "UCTS_Tess.hlsl"
-            #endif
-
-            #pragma fragmentoption ARB_precision_hint_fastest
-            #pragma multi_compile_shadowcaster
-            #pragma multi_compile_fog
-            #pragma only_renderers d3d11 xboxone ps4 switch
-            //Tessellation
-            //#pragma target 3.0
-            //v.2.0.4
-            #pragma multi_compile _IS_CLIPPING_OFF
-            //Tessellation
-            #include "UCTS_ShadowCaster_Tess.hlsl"
-            ENDHLSL
-        }
+//        Pass {
+//            Name "FORWARD_DELTA"
+//            Tags {
+//                //"LightMode"="ForwardAdd"
+//            }
+//            Blend One One
+//            Cull[_CullMode]
+//            
+//            
+//            HLSLPROGRAM
+//            //Tessellation
+//            #define TESSELLATION_ON
+//            #pragma target 5.0
+//            #pragma vertex tess_VertexInput
+//            #pragma hull hs_VertexInput
+//            #pragma domain ds_surf
+//            //#pragma vertex vert
+//
+//            #pragma fragment frag
+//            //#define UNITY_PASS_FORWARDADD
+//            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+//            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+//            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
+//            // #include "Lighting.cginc"
+//            //Tessellation
+//            #ifdef TESSELLATION_ON
+//            #include "UCTS_Tess.hlsl"
+//            #endif
+//
+//            //for Unity2018.x
+//            #pragma multi_compile_fwdadd_fullshadows
+//            #pragma multi_compile_fog
+//            #pragma only_renderers d3d11 xboxone ps4 switch
+//            //Tessellation
+//            //#pragma target 3.0
+//
+//            //v.2.0.4
+//            #pragma multi_compile _IS_TRANSCLIPPING_OFF
+//            #pragma multi_compile _IS_ANGELRING_ON
+//            #pragma multi_compile _IS_PASS_FWDDELTA
+//            #pragma multi_compile _ADDITIONAL_LIGHTS
+//            //Tessellation            
+//            #include "UCTS_ShadingGradeMap_Tess.hlsl"
+//
+//            ENDHLSL
+//        }
+//        Pass {
+//            Name "ShadowCaster"
+//            Tags {
+//                "LightMode"="ShadowCaster"
+//            }
+//            Offset 1, 1
+//            Cull Off
+//            
+//            HLSLPROGRAM
+//            //Tessellation
+//            #define TESSELLATION_ON
+//            #pragma target 5.0
+//            #pragma vertex tess_VertexInput
+//            #pragma hull hs_VertexInput
+//            #pragma domain ds_surf
+//            //#pragma vertex vert
+//
+//            #pragma fragment frag
+//            //#define UNITY_PASS_SHADOWCASTER
+//            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+//            // #include "Lighting.cginc"
+//            //Tessellation
+//            #ifdef TESSELLATION_ON
+//            #include "UCTS_Tess.hlsl"
+//            #endif
+//
+//            #pragma fragmentoption ARB_precision_hint_fastest
+//            #pragma multi_compile_shadowcaster
+//            #pragma multi_compile_fog
+//            #pragma only_renderers d3d11 xboxone ps4 switch
+//            //Tessellation
+//            //#pragma target 3.0
+//            //v.2.0.4
+//            #pragma multi_compile _IS_CLIPPING_OFF
+//            //Tessellation
+//            #include "UCTS_ShadowCaster_Tess.hlsl"
+//            ENDHLSL
+//        }
 //ToonCoreEnd
     }
     FallBack "Legacy Shaders/VertexLit"
