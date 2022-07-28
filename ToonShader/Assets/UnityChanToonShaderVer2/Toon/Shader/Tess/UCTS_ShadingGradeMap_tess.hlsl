@@ -559,6 +559,7 @@ float4 GetAdditionLightColor(ToonSurfaceData tsd,Light light)
     float Set_Opacity = saturate((tsd._Inverse_Clipping_var+_Tweak_transparency));
     half4 finalRGBA = half4(finalColor * Set_Opacity,0);
     #endif
+    return finalRGBA;
 }
 
 float4 frag(VertexOutput i, half facing : VFACE) : SV_TARGET {

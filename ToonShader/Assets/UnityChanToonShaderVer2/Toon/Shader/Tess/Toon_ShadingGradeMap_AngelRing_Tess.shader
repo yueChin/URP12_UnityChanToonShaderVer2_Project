@@ -240,7 +240,11 @@ Shader "UnityChanToonShader/Tessellation/AngelRing/Toon_ShadingGradeMap" {
             //v.2.0.4
             #pragma multi_compile _IS_TRANSCLIPPING_OFF
             #pragma multi_compile _IS_ANGELRING_ON
-            #pragma multi_compile _IS_PASS_FWDBASE
+            //#pragma multi_compile _IS_PASS_FWDBASE
+            #pragma multi_compile _MAIN_LIGHT_SHADOWS
+            #pragma multi_compile _MAIN_LIGHT_SHADOWS_CASCADE
+            #pragma multi_compile _ADDITIONAL_LIGHT_SHADOWS
+            #pragma multi_compile _SHADOWS_SOFT
             //v.2.0.7
             #pragma multi_compile _EMISSIVE_SIMPLE _EMISSIVE_ANIMATION
             //
