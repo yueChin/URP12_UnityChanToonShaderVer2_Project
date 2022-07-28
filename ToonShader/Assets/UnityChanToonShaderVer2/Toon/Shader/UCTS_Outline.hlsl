@@ -23,6 +23,7 @@
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/GlobalIllumination.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
 
+CBUFFER_START(PREMATERIAL)
 uniform float4 _LightColor0;
 //uniform float4 _BaseColor;
 //v.2.0.7.5
@@ -45,6 +46,7 @@ uniform half _Is_OutlineTex;
 //Baked Normal Texture for Outline
 uniform sampler2D _BakedNormal; uniform float4 _BakedNormal_ST;
 uniform half _Is_BakedNormal;
+CBUFFER_END
 //
 //v.2.0.4
 #ifdef _IS_OUTLINE_CLIPPING_YES

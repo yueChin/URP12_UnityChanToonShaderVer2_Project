@@ -129,7 +129,7 @@ Light GetMainLight()
 #else
     light.layerMask = DEFAULT_LIGHT_LAYERS;
 #endif
-
+    light.lightPositionWS = _MainLightPosition;
     return light;
 }
 

@@ -208,10 +208,15 @@ Shader "UnityChanToonShader/Toon_DoubleShadeWithFeather" {
             #pragma multi_compile _IS_CLIPPING_OFF
             //#pragma multi_compile _IS_PASS_FWDBASE
             #pragma multi_compile _ADDITIONAL_LIGHTS
-            #pragma multi_compile _MAIN_LIGHT_SHADOWS
-            #pragma multi_compile _MAIN_LIGHT_SHADOWS_CASCADE
-            #pragma multi_compile _ADDITIONAL_LIGHT_SHADOWS
-            #pragma multi_compile _SHADOWS_SOFT
+            #pragma multi_compile _ADDITIONAL_LIGHTS_VERTEX
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
+            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
+            #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
+            #pragma multi_compile_fragment _ _SHADOWS_SOFT
+            #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
+            #pragma multi_compile _ LIGHTMAP_SHADOW_MIXING
+            #pragma multi_compile _ SHADOWS_SHADOWMASK
             //v.2.0.7
             #pragma multi_compile _EMISSIVE_SIMPLE _EMISSIVE_ANIMATION
             //
@@ -276,6 +281,37 @@ Shader "UnityChanToonShader/Toon_DoubleShadeWithFeather" {
 //            ENDHLSL
 //        }
 //ToonCoreEnd
+                Pass
+        {
+            Name "ShadowCaster"
+            Tags{"LightMode" = "ShadowCaster"}
+
+            ZWrite On
+            ZTest Greater 
+            ColorMask 0
+            Cull[_Cull]
+
+            HLSLPROGRAM
+            #pragma exclude_renderers gles gles3 glcore
+            #pragma target 4.5
+
+            // -------------------------------------
+            // Material Keywords
+            #pragma shader_feature_local_fragment _ALPHATEST_ON
+            #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
+
+            //--------------------------------------
+            // GPU Instancing
+            #pragma multi_compile_instancing
+            #pragma multi_compile _ DOTS_INSTANCING_ON
+
+            #pragma vertex ShadowPassVertex
+            #pragma fragment ShadowPassFragment
+
+            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/Shaders/ShadowCasterPass.hlsl"
+            ENDHLSL
+        }
     }
     FallBack "Legacy Shaders/VertexLit"
     CustomEditor "UnityChan.UTS2GUI"

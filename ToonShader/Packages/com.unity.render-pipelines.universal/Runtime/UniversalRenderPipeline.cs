@@ -1211,6 +1211,16 @@ namespace UnityEngine.Rendering.Universal
 
                 if (currVisibleLight.lightType == LightType.Directional)
                 {
+                    if (currLight.gameObject.CompareTag("MainLight"))
+                    {
+                        brightestLightIntensity = currLight.intensity;
+                        brightestDirectionalLightIndex = i;
+                        break;
+                    }
+                }
+               
+                if (currVisibleLight.lightType == LightType.Directional)
+                {
                     // Sun source needs be a directional light
                     if (currLight == sunLight)
                         return i;
