@@ -141,6 +141,7 @@ uniform float _Tweak_transparency;
 #elif _IS_CLIPPING_OFF
 //DoubleShadeWithFeather
 #endif
+
 CBUFFER_END
 
 // UV回転をする関数：RotateUV()
