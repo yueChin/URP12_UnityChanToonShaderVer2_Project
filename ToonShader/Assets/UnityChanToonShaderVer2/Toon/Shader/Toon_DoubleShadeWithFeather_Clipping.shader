@@ -261,30 +261,32 @@ Shader "UnityChanToonShader/Toon_DoubleShadeWithFeather_Clipping" {
 //
 //            ENDHLSL
 //        }
-//        Pass {
-//            Name "ShadowCaster"
-//            Tags {
-//                "LightMode"="ShadowCaster"
-//            }
-//            Offset 1, 1
-//            Cull Off
-//            
-//            HLSLPROGRAM
-//            #pragma vertex vert
-//            #pragma fragment frag
-//            //#define UNITY_PASS_SHADOWCASTER
-//            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-//            //#include "Lighting.cginc"
-//            #pragma fragmentoption ARB_precision_hint_fastest
-//            #pragma multi_compile_shadowcaster
-//            #pragma multi_compile_fog
-//            #pragma only_renderers d3d9 d3d11 glcore gles gles3 metal vulkan xboxone ps4 switch
-//            #pragma target 3.0
-//            //v.2.0.4
-//            #pragma multi_compile _IS_CLIPPING_MODE
-//            #include "UCTS_ShadowCaster.hlsl"
-//            ENDHLSL
-//        }
+        Pass {
+            Name "ShadowCaster"
+            Tags {
+                "LightMode"="ShadowCaster"
+            }
+            Offset 1, 1
+            Cull Off
+            
+            HLSLPROGRAM
+            #pragma vertex ShadowPassVertex
+            #pragma fragment ShadowPassFragment
+            //#define UNITY_PASS_SHADOWCASTER
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            //#include "Lighting.cginc"
+            #pragma fragmentoption ARB_precision_hint_fastest
+            #pragma multi_compile_shadowcaster
+            #pragma multi_compile_fog
+            #pragma only_renderers d3d9 d3d11 glcore gles gles3 metal vulkan xboxone ps4 switch
+            #pragma target 3.0
+            //v.2.0.4
+            #pragma multi_compile _IS_CLIPPING_MODE
+            #pragma multi_compile_instancing
+            #pragma multi_compile _ DOTS_INSTANCING_ON
+            #include "UCTS_ShadowCaster.hlsl"
+            ENDHLSL
+        }
 //ToonCoreEnd
     }
     FallBack "Legacy Shaders/VertexLit"
