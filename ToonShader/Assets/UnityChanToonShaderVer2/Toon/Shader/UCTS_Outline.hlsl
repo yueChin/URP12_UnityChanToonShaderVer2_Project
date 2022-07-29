@@ -105,7 +105,7 @@ VertexOutput vert (VertexInput v) {
 //v2.0.4
 #ifdef _OUTLINE_NML
     //v.2.0.4.3 baked Normal Texture for Outline
-    o.pos = TransformObjectToHClip(lerp(float4(v.vertex.xyz + v.normal*Set_Outline_Width,1), float4(v.vertex.xyz + _BakedNormalDir*Set_Outline_Width,1),_Is_BakedNormal));// UnityObjectToClipPos(lerp(float4(v.vertex.xyz + v.normal*Set_Outline_Width,1), float4(v.vertex.xyz + _BakedNormalDir*Set_Outline_Width,1),_Is_BakedNormal));
+    o.pos = TransformObjectToHClip(lerp(float3(v.vertex.xyz + v.normal*Set_Outline_Width), float3(v.vertex.xyz + _BakedNormalDir*Set_Outline_Width),_Is_BakedNormal));// UnityObjectToClipPos(lerp(float4(v.vertex.xyz + v.normal*Set_Outline_Width,1), float4(v.vertex.xyz + _BakedNormalDir*Set_Outline_Width,1),_Is_BakedNormal));
 #elif _OUTLINE_POS
     Set_Outline_Width = Set_Outline_Width*2;
     float signVar = dot(normalize(v.vertex),normalize(v.normal))<0 ? -1 : 1;
@@ -123,7 +123,7 @@ float4 frag(VertexOutput i) : SV_Target{
     float4 objPos = mul ( unity_ObjectToWorld, float4(0,0,0,1) );
     //v.2.0.9
     float3 envLightSource_GradientEquator = unity_AmbientEquator.rgb >0.05 ? unity_AmbientEquator.rgb : half3(0.05,0.05,0.05);
-    float3 envLightSource_SkyboxIntensity = max(SampleSH(half4(0.0,0.0,0.0,1.0)),SampleSH(half4(0.0,-1.0,0.0,1.0))).rgb;
+    float3 envLightSource_SkyboxIntensity = max(SampleSH(half3(0.0,0.0,0.0)),SampleSH(half3(0.0,-1.0,0.0))).rgb;
     float3 ambientSkyColor = envLightSource_SkyboxIntensity.rgb>0.0 ? envLightSource_SkyboxIntensity*_Unlit_Intensity : envLightSource_GradientEquator*_Unlit_Intensity;
     //
     float3 lightColor = _LightColor0.rgb >0.05 ? _LightColor0.rgb : ambientSkyColor.rgb;
@@ -135,7 +135,7 @@ float4 frag(VertexOutput i) : SV_Target{
     float3 Set_BaseColor = _BaseColor.rgb*_MainTex_var.rgb;
     float3 _Is_BlendBaseColor_var = lerp( _Outline_Color.rgb*lightColor, (_Outline_Color.rgb*Set_BaseColor*Set_BaseColor*lightColor), _Is_BlendBaseColor );
     //
-    float3 _OutlineTex_var = tex2D(_OutlineTex,TRANSFORM_TEX(Set_UV0, _OutlineTex));
+    float3 _OutlineTex_var = tex2D(_OutlineTex,TRANSFORM_TEX(Set_UV0, _OutlineTex)).xyz;
 //v.2.0.7.5
 #ifdef _IS_OUTLINE_CLIPPING_NO
     float3 Set_Outline_Color = lerp(_Is_BlendBaseColor_var, _OutlineTex_var.rgb*_Outline_Color.rgb*lightColor, _Is_OutlineTex );

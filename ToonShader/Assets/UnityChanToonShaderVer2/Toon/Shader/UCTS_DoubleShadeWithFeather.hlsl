@@ -173,18 +173,19 @@ struct Attributes
 struct Varyings
 {
     float2 uv                       : TEXCOORD0;
-    DECLARE_LIGHTMAP_OR_SH(lightmapUV, vertexSH, 1);
-    float3 positionWS               : TEXCOORD2;
-    float3 normalWS                 : TEXCOORD3;
-    float4 tangentWS                : TEXCOORD4;    // xyz: tangent, w: sign
-    float3 bitangentWS              : TEXCOORD5;
+    float3 positionWS               : TEXCOORD1;
+    float3 normalWS                 : TEXCOORD2;
+    float4 tangentWS                : TEXCOORD3;    // xyz: tangent, w: sign
+    float3 bitangentWS              : TEXCOORD4;
 
-    float3 viewDirWS                : TEXCOORD6;
-
-    half4 fogFactorAndVertexLight   : TEXCOORD7; // x: fogFactor, yzw: vertex light
-
-    float4 shadowCoord              : TEXCOORD8;
-    float mirrorFlag : TEXCOORD9;
+    //float3 viewDirWS                : TEXCOORD6;
+    half4 fogFactorAndVertexLight   : TEXCOORD5; // x: fogFactor, yzw: vertex light
+    float4 shadowCoord              : TEXCOORD6;
+    float mirrorFlag : TEXCOORD7;
+    DECLARE_LIGHTMAP_OR_SH(staticLightmapUV, vertexSH, 8);
+#ifdef DYNAMICLIGHTMAP_ON
+    float2  dynamicLightmapUV : TEXCOORD9; // Dynamic lightmap UVs
+#endif
     float4 positionCS               : SV_POSITION;
     
     UNITY_VERTEX_INPUT_INSTANCE_ID
@@ -199,7 +200,7 @@ void InitializeInputData(Varyings input, half3 normalTS, out InputData inputData
     inputData.positionWS = input.positionWS;
 #endif
 
-    half3 viewDirWS = SafeNormalize(input.viewDirWS);
+    half3 viewDirWS = SafeNormalize(_WorldSpaceCameraPos.xyz - input.positionWS.xyz);
 #if defined(_NORMALMAP) || defined(_DETAIL)
     float sgn = input.tangentWS.w;      // should be either +1 or -1
     float3 bitangent = sgn * cross(input.normalWS.xyz, input.tangentWS.xyz);
@@ -221,9 +222,9 @@ void InitializeInputData(Varyings input, half3 normalTS, out InputData inputData
 
     inputData.fogCoord = input.fogFactorAndVertexLight.x;
     inputData.vertexLighting = input.fogFactorAndVertexLight.yzw;
-    inputData.bakedGI = SAMPLE_GI(input.lightmapUV, input.vertexSH, inputData.normalWS);
+    //inputData.bakedGI = SAMPLE_GI(input.staticLightmapUV, input.vertexSH, inputData.normalWS);
     inputData.normalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(input.positionCS);
-    inputData.shadowMask = SAMPLE_SHADOWMASK(input.lightmapUV);
+    inputData.shadowMask = SAMPLE_SHADOWMASK(input.staticLightmapUV);
 }
 
 struct ToonSurfaceData
@@ -232,6 +233,7 @@ struct ToonSurfaceData
     float2 Set_UV0;
     float3 normalDirection;
     float4 _MainTex_var;
+    float3 viewDirection;
 #if _IS_CLIPPING_TRANSMODE
     float _Inverse_Clipping_var;
 #endif
@@ -241,14 +243,14 @@ float4 GetMainLightColor(ToonSurfaceData tsd,float3x3 tangentTransform,Light mai
 {
     float3 defaultLightDirection = normalize(UNITY_MATRIX_V[2].xyz + UNITY_MATRIX_V[1].xyz);
     //v.2.0.5
-    float3 defaultLightColor = saturate(max(half3(0.05,0.05,0.05)*_Unlit_Intensity,max(SampleSH(half4(0.0, 0.0, 0.0, 1.0)),SampleSH(half4(0.0, -1.0, 0.0, 1.0)).rgb)*_Unlit_Intensity));
+    float3 defaultLightColor = saturate(max(half3(0.05,0.05,0.05)*_Unlit_Intensity,max(SampleSH(half3(0.0, 0.0, 0.0)),SampleSH(half3(0.0, -1.0, 0.0)).rgb)*_Unlit_Intensity));
     float3 customLightDirection = normalize(mul( unity_ObjectToWorld, float4(((float3(1.0,0.0,0.0)*_Offset_X_Axis_BLD*10)+(float3(0.0,1.0,0.0)*_Offset_Y_Axis_BLD*10)+(float3(0.0,0.0,-1.0)*lerp(-1.0,1.0,_Inverse_Z_Axis_BLD))),0)).xyz);
     float3 lightDirection = normalize(lerp(defaultLightDirection,mainLight.lightPositionWS.xyz,any(mainLight.lightPositionWS.xyz)));
     lightDirection = lerp(lightDirection, customLightDirection, _Is_BLD);
     //v.2.0.5: 
     float3 lightColor = lerp(max(defaultLightColor,mainLight.color.rgb),max(defaultLightColor,saturate(mainLight.color.rgb)),_Is_Filter_LightColor);
 
-    float3 halfDirection = normalize(tsd.input.viewDirWS+lightDirection);
+    float3 halfDirection = normalize(tsd.viewDirection+lightDirection);
     
     float3 Set_LightColor = lightColor.rgb;
     float3 Set_BaseColor = lerp( (_BaseColor.rgb*tsd._MainTex_var.rgb), ((_BaseColor.rgb*tsd._MainTex_var.rgb)*Set_LightColor), _Is_LightColor_Base );
@@ -269,23 +271,23 @@ float4 GetMainLightColor(ToonSurfaceData tsd,float3x3 tangentTransform,Light mai
     //Composition: 3 Basic Colors as Set_FinalBaseColor
     
     float lerpValue = saturate((1.0 + ( (_HalfLambert_var - (_ShadeColor_Step-_1st2nd_Shades_Feather)) * ((1.0 - _Set_2nd_ShadePosition_var.rgb).r - 1.0) ) / (_ShadeColor_Step - (_ShadeColor_Step-_1st2nd_Shades_Feather))));
-    float lerpColorMax = lerp(Set_1st_ShadeColor,Set_2nd_ShadeColor,lerpValue);
+    float3 lerpColorMax = lerp(Set_1st_ShadeColor,Set_2nd_ShadeColor,lerpValue);
     float3 Set_FinalBaseColor = lerp(Set_BaseColor,lerpColorMax,Set_FinalShadowMask); // Final Color
     float4 _Set_HighColorMask_var = tex2D(_Set_HighColorMask,TRANSFORM_TEX(tsd.Set_UV0, _Set_HighColorMask));
     float _Specular_var = 0.5*dot(halfDirection,lerp( tsd.input.normalWS, tsd.normalDirection, _Is_NormalMapToHighColor ))+0.5; //  Specular                
-    float _TweakHighColorMask_var = (saturate((_Set_HighColorMask_var.g+_Tweak_HighColorMaskLevel))*lerp( (1.0 - step(_Specular_var,(1.0 - pow(_HighColor_Power,5)))), pow(_Specular_var,exp2(lerp(11,1,_HighColor_Power))), _Is_SpecularToHighColor ));
+    float _TweakHighColorMask_var = (saturate((_Set_HighColorMask_var.g+_Tweak_HighColorMaskLevel))*lerp( (1.0 - step(_Specular_var,(1.0 - pow(abs(_HighColor_Power),5)))), pow(abs(_Specular_var),exp2(lerp(11,1,_HighColor_Power))), _Is_SpecularToHighColor ));
     float4 _HighColor_Tex_var = tex2D(_HighColor_Tex,TRANSFORM_TEX(tsd.Set_UV0, _HighColor_Tex));
     float3 _HighColor_var = (lerp( (_HighColor_Tex_var.rgb*_HighColor.rgb), ((_HighColor_Tex_var.rgb*_HighColor.rgb)*Set_LightColor), _Is_LightColor_HighColor )*_TweakHighColorMask_var);
     //Composition: 3 Basic Colors and HighColor as Set_HighColor
     float3 Set_HighColor = (lerp( saturate((Set_FinalBaseColor-_TweakHighColorMask_var)), Set_FinalBaseColor, lerp(_Is_BlendAddToHiColor,1.0,_Is_SpecularToHighColor) )+lerp( _HighColor_var, (_HighColor_var*((1.0 - Set_FinalShadowMask)+(Set_FinalShadowMask*_TweakHighColorOnShadow))), _Is_UseTweakHighColorOnShadow ));
     float4 _Set_RimLightMask_var = tex2D(_Set_RimLightMask,TRANSFORM_TEX(tsd.Set_UV0, _Set_RimLightMask));
     float3 _Is_LightColor_RimLight_var = lerp( _RimLightColor.rgb, (_RimLightColor.rgb*Set_LightColor), _Is_LightColor_RimLight );
-    float _RimArea_var = (1.0 - dot(lerp( tsd.input.normalWS, tsd.normalDirection, _Is_NormalMapToRimLight ),tsd.input.viewDirWS));
-    float _RimLightPower_var = pow(_RimArea_var,exp2(lerp(3,0,_RimLight_Power)));
+    float _RimArea_var = (1.0 - dot(lerp( tsd.input.normalWS, tsd.normalDirection, _Is_NormalMapToRimLight ),tsd.viewDirection));
+    float _RimLightPower_var = pow(abs(_RimArea_var),exp2(lerp(3,0,_RimLight_Power)));
     float _Rimlight_InsideMask_var = saturate(lerp( (0.0 + ( (_RimLightPower_var - _RimLight_InsideMask) * (1.0 - 0.0) ) / (1.0 - _RimLight_InsideMask)), step(_RimLight_InsideMask,_RimLightPower_var), _RimLight_FeatherOff ));
     float _VertHalfLambert_var = 0.5*dot(tsd.input.normalWS,lightDirection)+0.5;
     float3 _LightDirection_MaskOn_var = lerp( (_Is_LightColor_RimLight_var*_Rimlight_InsideMask_var), (_Is_LightColor_RimLight_var*saturate((_Rimlight_InsideMask_var-((1.0 - _VertHalfLambert_var)+_Tweak_LightDirection_MaskLevel)))), _LightDirection_MaskOn );
-    float _ApRimLightPower_var = pow(_RimArea_var,exp2(lerp(3,0,_Ap_RimLight_Power)));
+    float _ApRimLightPower_var = pow(abs(_RimArea_var),exp2(lerp(3,0,_Ap_RimLight_Power)));
     float3 Set_RimLight = (saturate((_Set_RimLightMask_var.g+_Tweak_RimLightMaskLevel))*lerp( _LightDirection_MaskOn_var, (_LightDirection_MaskOn_var+(lerp( _Ap_RimLightColor.rgb, (_Ap_RimLightColor.rgb*Set_LightColor), _Is_LightColor_Ap_RimLight )*saturate((lerp( (0.0 + ( (_ApRimLightPower_var - _RimLight_InsideMask) * (1.0 - 0.0) ) / (1.0 - _RimLight_InsideMask)), step(_RimLight_InsideMask,_ApRimLightPower_var), _Ap_RimLight_FeatherOff )-(saturate(_VertHalfLambert_var)+_Tweak_LightDirection_MaskLevel))))), _Add_Antipodean_RimLight ));
     //Composition: HighColor and RimLight as _RimLight_var
     float3 _RimLight_var = lerp( Set_HighColor, (Set_HighColor+Set_RimLight), _RimLight );
@@ -320,7 +322,7 @@ float4 GetMainLightColor(ToonSurfaceData tsd,float3x3 tangentTransform,Light mai
     //v.2.0.5: MatCap with camera skew correction
     float3 viewNormal = (mul(UNITY_MATRIX_V, float4(lerp( tsd.input.normalWS, mul( _NormalMapForMatCap_var.rgb, tangentTransform ).rgb, _Is_NormalMapForMatCap ),0))).rgb;
     float3 NormalBlend_MatcapUV_Detail = viewNormal.rgb * float3(-1,-1,1);
-    float3 NormalBlend_MatcapUV_Base = (mul( UNITY_MATRIX_V, float4(tsd.input.viewDirWS,0) ).rgb*float3(-1,-1,1)) + float3(0,0,1);
+    float3 NormalBlend_MatcapUV_Base = (mul( UNITY_MATRIX_V, float4(tsd.viewDirection,0) ).rgb*float3(-1,-1,1)) + float3(0,0,1);
     float3 noSknewViewNormal = NormalBlend_MatcapUV_Base*dot(NormalBlend_MatcapUV_Base, NormalBlend_MatcapUV_Detail)/NormalBlend_MatcapUV_Base.b - NormalBlend_MatcapUV_Detail;                
     float2 _ViewNormalAsMatCapUV = (lerp(noSknewViewNormal,viewNormal,_Is_Ortho).rg*0.5)+0.5;
     //v.2.0.7
@@ -411,13 +413,13 @@ float4 GetMainLightColor(ToonSurfaceData tsd,float3x3 tangentTransform,Light mai
 
 float4 GetAdditionLightColor(ToonSurfaceData tsd,Light light)
 {
-    float3 lightDirection = normalize(lerp(light.lightPositionWS.xyz,light.lightPositionWS - tsd.input.positionWS.xyz,light.lightPositionWS.w));
+    float3 lightDirection = normalize(lerp(light.lightPositionWS.xyz,light.lightPositionWS.xyz - tsd.input.positionWS.xyz,light.lightPositionWS.w));
     //v.2.0.5: 
     float3 addPassLightColor = (0.5*dot(lerp( tsd.input.normalWS, tsd.normalDirection, _Is_NormalMapToBase ), lightDirection)+0.5) * light.color.rgb * light.shadowAttenuation;
     float pureIntencity = max(0.001,(0.299*light.color.r + 0.587*light.color.g + 0.114*light.color.b));
     float3 lightColor = max(0, lerp(addPassLightColor, lerp(0,min(addPassLightColor,addPassLightColor/pureIntencity),light.lightPositionWS.w),_Is_Filter_LightColor));
 
-    float3 halfDirection = normalize(tsd.input.viewDirWS+lightDirection);
+    float3 halfDirection = normalize(tsd.viewDirection+lightDirection);
     
     //v.2.0.5:
     _BaseColor_Step = saturate(_BaseColor_Step + _StepOffset);
@@ -446,7 +448,7 @@ float4 GetAdditionLightColor(ToonSurfaceData tsd,Light light)
     //v.2.0.6: Add HighColor if _Is_Filter_HiCutPointLightColor is False
     float4 _Set_HighColorMask_var = tex2D(_Set_HighColorMask,TRANSFORM_TEX(tsd.Set_UV0, _Set_HighColorMask));
     float _Specular_var = 0.5*dot(halfDirection,lerp( tsd.input.normalWS, tsd.normalDirection, _Is_NormalMapToHighColor ))+0.5; //  Specular                
-    float _TweakHighColorMask_var = (saturate((_Set_HighColorMask_var.g+_Tweak_HighColorMaskLevel))*lerp( (1.0 - step(_Specular_var,(1.0 - pow(_HighColor_Power,5)))), pow(_Specular_var,exp2(lerp(11,1,_HighColor_Power))), _Is_SpecularToHighColor ));
+    float _TweakHighColorMask_var = (saturate((_Set_HighColorMask_var.g+_Tweak_HighColorMaskLevel))*lerp( (1.0 - step(_Specular_var,(1.0 - pow(abs(_HighColor_Power),5)))), pow(abs(_Specular_var),exp2(lerp(11,1,_HighColor_Power))), _Is_SpecularToHighColor ));
     float4 _HighColor_Tex_var = tex2D(_HighColor_Tex,TRANSFORM_TEX(tsd.Set_UV0, _HighColor_Tex));
     float3 _HighColor_var = (lerp( (_HighColor_Tex_var.rgb*_HighColor.rgb), ((_HighColor_Tex_var.rgb*_HighColor.rgb)*Set_LightColor), _Is_LightColor_HighColor )*_TweakHighColorMask_var);
     finalColor = finalColor + lerp(lerp( _HighColor_var, (_HighColor_var*((1.0 - Set_FinalShadowMask)+(Set_FinalShadowMask*_TweakHighColorOnShadow))), _Is_UseTweakHighColorOnShadow ),float3(0,0,0),_Is_Filter_HiCutPointLightColor);
@@ -493,7 +495,7 @@ Varyings LitPassVertex(Attributes input)
 
     // already normalized from normal transform to WS.
     output.normalWS = normalInput.normalWS;
-    output.viewDirWS = viewDirWS;
+    //output.viewDirWS = viewDirWS;
     real sign = input.tangentOS.w * GetOddNegativeScale();
     half4 tangentWS = half4(normalInput.tangentWS.xyz, sign);
     output.tangentWS = tangentWS;
@@ -533,7 +535,7 @@ half4 LitPassFragment(Varyings input) : SV_Target
 
     input.normalWS = normalize(input.normalWS);
     float3x3 tangentTransform = float3x3( input.tangentWS.xyz, input.bitangentWS, input.normalWS);
-    //float3 viewDirection = input.viewDirWS;// normalize(_WorldSpaceCameraPos.xyz - input.positionWS.xyz);
+    float3 viewDirection = SafeNormalize(_WorldSpaceCameraPos.xyz - input.positionWS.xyz);
     float2 Set_UV0 = input.uv;
     //v.2.0.6
     //float3 _NormalMap_var = UnpackNormal(tex2D(_NormalMap,TRANSFORM_TEX(Set_UV0, _NormalMap)));
@@ -566,6 +568,7 @@ half4 LitPassFragment(Varyings input) : SV_Target
     tsd.Set_UV0 = Set_UV0;
     tsd.normalDirection = normalDirection;
     tsd._MainTex_var = _MainTex_var;
+    tsd.viewDirection = viewDirection;
 #if _IS_CLIPPING_TRANSMODE
     tsd._Inverse_Clipping_var = _Inverse_Clipping_var;
 #endif
@@ -639,7 +642,7 @@ VertexOutput vert (VertexInput v) {
     o.tangentDir = normalize( mul( unity_ObjectToWorld, float4( v.tangent.xyz, 0.0 ) ).xyz );
     o.bitangentDir = normalize(cross(o.normalDir, o.tangentDir) * v.tangent.w);
     o.posWorld = mul(unity_ObjectToWorld, v.vertex);
-    o.pos = TransformObjectToHClip(v.vertex);//UnityObjectToClipPos( v.vertex );
+    o.pos = TransformObjectToHClip(v.vertex.xyz);//UnityObjectToClipPos( v.vertex );
     //v.2.0.7 鏡の中判定（右手座標系か、左手座標系かの判定）o.mirrorFlag = -1 なら鏡の中.
     float3 crossFwd = cross(UNITY_MATRIX_V[0], UNITY_MATRIX_V[1]);
     o.mirrorFlag = dot(crossFwd, UNITY_MATRIX_V[2]) < 0 ? 1 : -1;
@@ -654,7 +657,7 @@ VertexOutput vert (VertexInput v) {
     half fogFactor = ComputeFogFactor(vertexInput.positionCS.z);
     half3 vertexLight = VertexLighting(vertexInput.positionWS, normalInput.normalWS);
     o.fogFactorAndVertexLight = half4(fogFactor, vertexLight);
-    o.shadowCoord = TransformWorldToShadowCoord(o.posWorld);
+    o.shadowCoord = TransformWorldToShadowCoord(o.posWorld.xyz);
     return o;
 }
 float4 frag(VertexOutput i, half facing : VFACE) : SV_TARGET {
@@ -698,7 +701,7 @@ float4 frag(VertexOutput i, half facing : VFACE) : SV_TARGET {
     #else
     half4 shadowMask = half4(1, 1, 1, 1);
     #endif
-    Light mainLight = GetMainLight(i.shadowCoord, i.posWorld, shadowMask);
+    Light mainLight = GetMainLight(i.shadowCoord, i.posWorld.xyz, shadowMask);
     half3 attenuatedLightColor = mainLight.color * (mainLight.distanceAttenuation * mainLight.shadowAttenuation);
     
 //v.2.0.4
