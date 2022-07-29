@@ -265,17 +265,17 @@ struct ToonSurfaceData
 #endif
 };
 
-float4 GetMainLightColor(ToonSurfaceData tsd,float3x3 tangentTransform)
+float4 GetMainLightColor(ToonSurfaceData tsd,float3x3 tangentTransform,Light mainLight)
 {
     float3 defaultLightDirection = normalize(unity_MatrixV[2].xyz + unity_MatrixV[1].xyz);
     //v.2.0.5
     float3 defaultLightColor = saturate(max(half3(0.05,0.05,0.05)*_Unlit_Intensity,max(SampleSH(half4(0.0, 0.0, 0.0, 1.0)),SampleSH(half4(0.0, -1.0, 0.0, 1.0)).rgb)*_Unlit_Intensity));
     float3 customLightDirection = normalize(mul( unity_ObjectToWorld, float4(((float3(1.0,0.0,0.0)*_Offset_X_Axis_BLD*10)+(float3(0.0,1.0,0.0)*_Offset_Y_Axis_BLD*10)+(float3(0.0,0.0,-1.0)*lerp(-1.0,1.0,_Inverse_Z_Axis_BLD))),0)).xyz);
 
-    float3 lightDirection = normalize(lerp(defaultLightDirection,_MainLightPosition.xyz,any(_MainLightPosition.xyz)));
+    float3 lightDirection = normalize(lerp(defaultLightDirection,mainLight.lightPositionWS.xyz,any(mainLight.lightPositionWS.xyz)));
     lightDirection = lerp(lightDirection, customLightDirection, _Is_BLD);
     //v.2.0.5:
-    float3 lightColor = lerp(max(defaultLightColor,_MainLightColor.rgb),max(defaultLightColor,saturate(_MainLightColor.rgb)),_Is_Filter_LightColor);
+    float3 lightColor = lerp(max(defaultLightColor,mainLight.color.rgb),max(defaultLightColor,saturate(mainLight.color.rgb)),_Is_Filter_LightColor);
     float3 halfDirection = normalize(tsd.viewDirection+lightDirection);
     float3 Set_LightColor = lightColor.rgb;
     float3 Set_BaseColor = lerp( (tsd._MainTex_var.rgb*_BaseColor.rgb), ((tsd._MainTex_var.rgb*_BaseColor.rgb)*Set_LightColor), _Is_LightColor_Base );
@@ -288,7 +288,7 @@ float4 GetMainLightColor(ToonSurfaceData tsd,float3x3 tangentTransform)
     float4 _ShadingGradeMap_var = tex2Dlod(_ShadingGradeMap,float4(TRANSFORM_TEX(tsd.Set_UV0, _ShadingGradeMap),0.0,_BlurLevelSGM));
     //v.2.0.6
     //Minmimum value is same as the Minimum Feather's value with the Minimum Step's value as threshold.
-    float _SystemShadowsLevel_var = (_MainLightShadowParams.x*0.5)+0.5+_Tweak_SystemShadowsLevel > 0.001 ? (_MainLightShadowParams.x*0.5)+0.5+_Tweak_SystemShadowsLevel : 0.0001;
+    float _SystemShadowsLevel_var = (mainLight.shadowAttenuation.x*0.5)+0.5+_Tweak_SystemShadowsLevel > 0.001 ? (mainLight.shadowAttenuation.x*0.5)+0.5+_Tweak_SystemShadowsLevel : 0.0001;
     float _ShadingGradeMapLevel_var = _ShadingGradeMap_var.r < 0.95 ? _ShadingGradeMap_var.r+_Tweak_ShadingGradeMapLevel : 1;
     float Set_ShadingGrade = saturate(_ShadingGradeMapLevel_var)*lerp( _HalfLambert_var, (_HalfLambert_var*saturate(_SystemShadowsLevel_var)), _Set_SystemShadowsToBase );
     //
@@ -455,8 +455,8 @@ float4 GetAdditionLightColor(ToonSurfaceData tsd,Light light)
 
     float3 lightDirection = normalize(lerp(light.lightPositionWS.xyz, light.lightPositionWS.xyz - tsd.input.positionWS.xyz,light.lightPositionWS.w));
     //v.2.0.5: 
-    float3 addPassLightColor = (0.5*dot(lerp( tsd.input.normalWS, tsd.normalDirection, _Is_NormalMapToBase ), lightDirection)+0.5) * _MainLightColor.rgb * light.shadowAttenuation;
-    float pureIntencity = max(0.001,(0.299*_MainLightColor.r + 0.587*_MainLightColor.g + 0.114*_MainLightColor.b));
+    float3 addPassLightColor = (0.5*dot(lerp( tsd.input.normalWS, tsd.normalDirection, _Is_NormalMapToBase ), lightDirection)+0.5) * light.color.rgb * light.shadowAttenuation;
+    float pureIntencity = max(0.001,(0.299*light.color.r + 0.587*light.color.g + 0.114*light.color.b));
     float3 lightColor = max(0, lerp(addPassLightColor, lerp(0,min(addPassLightColor,addPassLightColor/pureIntencity),light.lightPositionWS.w),_Is_Filter_LightColor));
 ////// Lighting:
     float3 halfDirection = normalize(tsd.viewDirection+lightDirection);
@@ -468,9 +468,9 @@ float4 GetAdditionLightColor(ToonSurfaceData tsd,Light light)
     _2nd_ShadeColor_Step = saturate(_2nd_ShadeColor_Step + _StepOffset);
     //
     //v.2.0.5: If Added lights is directional, set 0 as _LightIntensity
-    float _LightIntensity = lerp(0,(0.299*_MainLightColor.r + 0.587*_MainLightColor.g + 0.114*_MainLightColor.b)*light.shadowAttenuation,light.lightPositionWS.w) ;
+    float _LightIntensity = lerp(0,(0.299*light.color.r + 0.587*light.color.g + 0.114*light.color.b)*light.shadowAttenuation,light.lightPositionWS.w) ;
     //v.2.0.5: Filtering the high intensity zone of PointLights
-    float3 Set_LightColor = lerp(lightColor,lerp(lightColor,min(lightColor,_MainLightColor.rgb*light.shadowAttenuation*_1st_ShadeColor_Step),light.lightPositionWS.w),_Is_Filter_HiCutPointLightColor);
+    float3 Set_LightColor = lerp(lightColor,lerp(lightColor,min(lightColor,light.color.rgb*light.shadowAttenuation*_1st_ShadeColor_Step),light.lightPositionWS.w),_Is_Filter_HiCutPointLightColor);
     //
     float3 Set_BaseColor = lerp( (tsd._MainTex_var.rgb*_BaseColor.rgb*_LightIntensity), ((tsd._MainTex_var.rgb*_BaseColor.rgb)*Set_LightColor), _Is_LightColor_Base );
     //v.2.0.5
@@ -608,11 +608,12 @@ half4 LitPassFragment(Varyings input) : SV_Target
     tsd._Inverse_Clipping_var = _Inverse_Clipping_var;
     #endif
 
-    
-    float4 finalRGBA = GetMainLightColor(tsd,tangentTransform);
-    #if defined(_ADDITIONAL_LIGHTS)
     half4 shadowMask = CalculateShadowMask(inputData);
     AmbientOcclusionFactor aoFactor = CreateAmbientOcclusionFactor(inputData, surfaceData);
+    Light mainLight = GetMainLight(inputData, shadowMask, aoFactor);
+    
+    float4 finalRGBA = GetMainLightColor(tsd,tangentTransform,mainLight);
+    #if defined(_ADDITIONAL_LIGHTS)
     uint pixelLightCount = GetAdditionalLightsCount();
 
     #if USE_CLUSTERED_LIGHTING
