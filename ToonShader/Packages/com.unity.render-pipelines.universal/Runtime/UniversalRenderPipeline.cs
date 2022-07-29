@@ -1215,7 +1215,7 @@ namespace UnityEngine.Rendering.Universal
                     {
                         brightestLightIntensity = currLight.intensity;
                         brightestDirectionalLightIndex = i;
-                        break;
+                        return brightestDirectionalLightIndex;
                     }
                 }
                

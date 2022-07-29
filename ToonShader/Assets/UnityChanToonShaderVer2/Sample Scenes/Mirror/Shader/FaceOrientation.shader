@@ -1,4 +1,4 @@
-Shader "Unlit/FaceOrientation"
+Shader "URP_Unlit/FaceOrientation"
 {
     Properties
     {
@@ -7,31 +7,45 @@ Shader "Unlit/FaceOrientation"
     }
     SubShader
     {
+        Tags {
+            //"Queue"="AlphaTest-1"   //StencilMask Opaque and _Clipping
+            //"RenderType"="TransparentCutout"
+            "RenderPipeline" = "UniversalPipeline"
+        }
         Pass
         {
+            Name "FaceOrientation"
+            Tags {
+                //"LightMode" = "UniversalForward"
+                "LightMode" = "UniversalForward"
+            }
             Cull Off // 裏向きのカリングをオフにします
 
-            CGPROGRAM
+            HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
             #pragma target 3.0
-
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/API/D3D11.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Input.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
+            
             float4 vert (float4 vertex : POSITION) : SV_POSITION
             {
-                return UnityObjectToClipPos(vertex);
+                return TransformObjectToHClip(vertex);
             }
 
-            fixed4 _ColorFront;
-            fixed4 _ColorBack;
+            half4 _ColorFront;
+            half4 _ColorBack;
 
-            fixed4 frag (fixed facing : VFACE) : SV_Target
+            half4 frag (half facing : VFACE) : SV_Target
             {
                 // VFACE 入力は正面向きでは負の値、
                 // 裏向きでは負の値です。その値によって 
                 // 2 色のうちの 1 つを出力します。
                 return facing > 0 ? _ColorFront : _ColorBack;
             }
-            ENDCG
+            ENDHLSL
         }
     }
 }

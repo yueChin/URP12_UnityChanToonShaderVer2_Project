@@ -1,6 +1,9 @@
+using System;
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 // This is in fact just the Water script from Pro Standard Assets,
 // just with refraction stuff removed.
@@ -35,13 +38,18 @@ namespace UnityChan
         private int m_OldReflectionTextureSize = 0;
         private static bool s_InsideRendering = false;
 
-        public void OnWillRenderObject()
+        private void OnEnable()
         {
-            var rend = GetComponent<Renderer>();
+            RenderPipelineManager.beginCameraRendering += OnWillRenderObjectBuiltinToURP;
+        }
+
+        private void OnWillRenderObjectBuiltinToURP(ScriptableRenderContext context, Camera camera)
+        {
+            Renderer rend = GetComponent<Renderer>();
             if (!enabled || !rend || !rend.sharedMaterial || !rend.enabled)
                 return;
 
-            Camera cam = Camera.current;
+            Camera cam = camera;//Camera.current;
             if (!cam)
                 return;
 
@@ -96,7 +104,8 @@ namespace UnityChan
             reflectionCamera.transform.position = newpos;
             Vector3 euler = cam.transform.eulerAngles;
             reflectionCamera.transform.eulerAngles = new Vector3(0, euler.y, euler.z);
-            reflectionCamera.Render();
+            //reflectionCamera.Render();
+            UniversalRenderPipeline.RenderSingleCamera(context, reflectionCamera); // render planar reflections  开始渲染函数
             reflectionCamera.transform.position = oldpos;
             GL.invertCulling = false;
             Material[] materials = rend.sharedMaterials;
@@ -113,10 +122,10 @@ namespace UnityChan
             s_InsideRendering = false;
         }
 
-
         // Cleanup all the objects we possibly have created
         void OnDisable()
         {
+            RenderPipelineManager.beginCameraRendering -= OnWillRenderObjectBuiltinToURP;
             if (m_ReflectionTexture)
             {
                 DestroyImmediate(m_ReflectionTexture);
@@ -168,6 +177,25 @@ namespace UnityChan
             dest.orthographicSize = src.orthographicSize;
         }
 
+        private Camera CreateReflectCamera() {
+            GameObject go = new GameObject(gameObject.name + " Planar Reflection Camera",typeof(Camera));
+            UniversalAdditionalCameraData cameraData = go.AddComponent(typeof(UniversalAdditionalCameraData)) as UniversalAdditionalCameraData;
+
+            cameraData.requiresColorOption = CameraOverrideOption.Off;
+            cameraData.requiresDepthOption = CameraOverrideOption.Off;
+            cameraData.renderShadows = false;
+            cameraData.SetRenderer(1);  // 根据 render list 的索引选择 render TODO
+
+            Transform t = transform;
+            Camera reflectionCamera = go.GetComponent<Camera>();
+            reflectionCamera.transform.SetPositionAndRotation(transform.position, t.rotation);  // 相机初始位置设为当前 gameobject 位置
+            reflectionCamera.depth = -10;  // 渲染优先级 [-100, 100]
+            reflectionCamera.enabled = false;
+            go.hideFlags = HideFlags.HideAndDontSave;
+
+            return reflectionCamera;
+        }
+        
         // On-demand create any objects we need
         private void CreateMirrorObjects(Camera currentCamera, out Camera reflectionCamera)
         {
